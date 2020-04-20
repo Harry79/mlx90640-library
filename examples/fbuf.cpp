@@ -29,8 +29,8 @@ void put_pixel_false_colour(int x, int y, double v) {
     static float color[NUM_COLORS][3] = { {0,0,0}, {0,0,1}, {0,1,0}, {1,1,0}, {1,0,0}, {1,0,1}, {1,1,1} };
     int idx1, idx2;
     float fractBetween = 0;
-    float vmin = 5.0;
-    float vmax = 50.0;
+    float vmin = -5.0;
+    float vmax = 40.0;
     float vrange = vmax-vmin;
     v -= vmin;
     v /= vrange;
@@ -115,7 +115,7 @@ int main(){
 
         for(int y = 0; y < 24; y++){
             for(int x = 0; x < 32; x++){
-                float val = mlx90640To[32 * (23-y) + x];
+                float val = mlx90640To[32 * y + x];
                 put_pixel_false_colour((y*IMAGE_SCALE), (x*IMAGE_SCALE), val);
             }
         }

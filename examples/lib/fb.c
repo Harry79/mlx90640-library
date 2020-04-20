@@ -93,7 +93,7 @@ void fb_put_pixel(int x, int y, int r, int g, int b) {
 
 int fb_init(){
     // Open the file for reading and writing
-    fbfd = open("/dev/fb0", O_RDWR);
+    fbfd = open("/dev/fb1", O_RDWR);
     if (fbfd == -1) {
         printf("Error: cannot open framebuffer device.\n");
         return 1;

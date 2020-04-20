@@ -348,7 +348,7 @@ int main(){
 	MLX90640_ExtractParameters(eeMLX90640, &mlx90640);
 
 
-	video_encode_start("video.apng", FPS, AV_CODEC_ID_APNG);
+	//	video_encode_start("video.apng", FPS, AV_CODEC_ID_APNG);
 
 	printf("Encode started..\n");
 
