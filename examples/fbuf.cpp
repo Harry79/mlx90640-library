@@ -10,7 +10,7 @@
 
 #define MLX_I2C_ADDR 0x33
 
-#define IMAGE_SCALE 5
+#define IMAGE_SCALE 13
 
 // Valid frame rates are 1, 2, 4, 8, 16, 32 and 64
 // The i2c baudrate is set to 1mhz to support these
@@ -125,8 +125,8 @@ int main(){
 	
         for(int y = 0; y < 24; y++){
             for(int x = 0; x < 32; x++){
-                float val = mlx90640To[32 * y + x];
-                put_pixel_false_colour((y*IMAGE_SCALE), (x*IMAGE_SCALE), val);
+	      float val = mlx90640To[32 * (23-y) + x];
+                put_pixel_false_colour((x*IMAGE_SCALE), (y  *IMAGE_SCALE), val);
             }
         }
         auto end = std::chrono::system_clock::now();
