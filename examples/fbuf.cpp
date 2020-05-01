@@ -23,14 +23,15 @@
 // to account for this.
 #define OFFSET_MICROS 850
 
+static float vmin = -5;
+static float vmax = 40;
+
 void put_pixel_false_colour(int x, int y, double v) {
     // Heatmap code borrowed from: http://www.andrewnoske.com/wiki/Code_-_heatmaps_and_color_gradients
     const int NUM_COLORS = 7;
     static float color[NUM_COLORS][3] = { {0,0,0}, {0,0,1}, {0,1,0}, {1,1,0}, {1,0,0}, {1,0,1}, {1,1,1} };
     int idx1, idx2;
     float fractBetween = 0;
-    float vmin = -5.0;
-    float vmax = 40.0;
     float vrange = vmax-vmin;
     v -= vmin;
     v /= vrange;
@@ -62,10 +63,10 @@ int main(){
     static uint16_t eeMLX90640[832];
     float emissivity = 1;
     uint16_t frame[834];
-    static float image[768];
+    //    static float image[768];
     static float mlx90640To[768];
     float eTa;
-    static uint16_t data[768*sizeof(float)];
+    //    static uint16_t data[768*sizeof(float)];
 
     auto frame_time = std::chrono::microseconds(FRAME_TIME_MICROS + OFFSET_MICROS);
 
@@ -113,6 +114,15 @@ int main(){
         eTa = MLX90640_GetTa(frame, &mlx90640);
         MLX90640_CalculateTo(frame, &mlx90640, emissivity, eTa, mlx90640To);
 
+	vmin=mlx90640To[0];
+	vmax = vmin;
+	
+	for (int i=1; i<768; ++i)
+	  {
+	    if (vmin>mlx90640To[i]) vmin = mlx90640To[i];
+	    if (vmax<mlx90640To[i]) vmax = mlx90640To[i];
+	  }
+	
         for(int y = 0; y < 24; y++){
             for(int x = 0; x < 32; x++){
                 float val = mlx90640To[32 * y + x];
