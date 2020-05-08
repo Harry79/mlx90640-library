@@ -123,6 +123,8 @@ int main(){
 	    if (vmax<mlx90640To[i]) vmax = mlx90640To[i];
 	  }
 	
+	printf("min max = %g %g\n", vmin, vmax);
+	
         for(int y = 0; y < 24; y++){
             for(int x = 0; x < 32; x++){
 	      float val = mlx90640To[32 * (23-y) + x];
