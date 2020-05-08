@@ -9,7 +9,7 @@
 
 #define MLX_I2C_ADDR 0x33
 
-#define IMAGE_SCALE 13
+#define IMAGE_SCALE 22
 
 // Valid frame rates are 1, 2, 4, 8, 16, 32 and 64
 // The i2c baudrate is set to 1mhz to support these
@@ -99,6 +99,7 @@ extern "C"
 //Some settings doesn't work well
 #define CAM_WIDTH 1920
 #define CAM_HEIGHT 1080
+#define CAM_HEIGHT16 1088
 #define CAM_SHARPNESS 0 //-100 .. 100
 #define CAM_CONTRAST 0 //-100 .. 100
 #define CAM_BRIGHTNESS 50 //0 .. 100
@@ -1048,8 +1049,8 @@ void set_render_config(component_t* render)
 
   printf("dispreg set = 0x%x num = %i fs = %i src = %i %i %i %i dst = %i %i %i %i mode = %x layer = %i ver = %x size = %i\n", port_dispreg.set, port_dispreg.num, port_dispreg.fullscreen, port_dispreg.src_rect.x_offset, port_dispreg.src_rect.y_offset, port_dispreg.src_rect.width, port_dispreg.src_rect.height, port_dispreg.dest_rect.x_offset, port_dispreg.dest_rect.y_offset, port_dispreg.dest_rect.width, port_dispreg.dest_rect.height, port_dispreg.mode, port_dispreg.layer, port_dispreg.nVersion.nVersion, port_dispreg.nSize);
   
-  port_dispreg.dest_rect.width = 1920;
-  port_dispreg.dest_rect.height = 1080;
+  port_dispreg.dest_rect.width = CAM_WIDTH;
+  port_dispreg.dest_rect.height = CAM_HEIGHT;
   port_dispreg.set = (OMX_DISPLAYSETTYPE)OMX_DISPLAY_SET_DEST_RECT;
 
   //memset(&port_dispreg, 0, sizeof(OMX_CONFIG_DISPLAYREGIONTYPE));
@@ -1221,10 +1222,10 @@ void updateMLX90640()
 
 void quad(unsigned char* buff, unsigned char val)
 { 
-  for (int j=0; j<22; ++j)
-    for (int i=0; i<22; ++i)
+  for (int j=0; j<IMAGE_SCALE; ++j)
+    for (int i=0; i<IMAGE_SCALE; ++i)
       {
-	buff[i+j*1920/2] = val;
+	buff[i+j*CAM_WIDTH/2] = val;
       }
 }
 
@@ -1370,10 +1371,10 @@ int main (){
   // which needs to be sent before the data probably holds this
   // information, see
   // file:///usr/share/doc/libraspberrypi-doc/ilcomponents/video_encode.html.
-  port_st.format.video.nFrameWidth = 1920;
-  port_st.format.video.nFrameHeight = 1080;
-  port_st.format.video.nSliceHeight = 1088;
-  port_st.format.video.nStride = 1920;
+  port_st.format.video.nFrameWidth = CAM_WIDTH;
+  port_st.format.video.nFrameHeight = CAM_HEIGHT;
+  port_st.format.video.nSliceHeight = CAM_HEIGHT16;
+  port_st.format.video.nStride = CAM_WIDTH;
   port_st.format.video.xFramerate = VIDEO_FRAMERATE << 16;
   port_st.format.video.pNativeRender = 0;
   //port_st.format.video.xFramerate = VIDEO_FRAMERATE << 16;
@@ -1491,7 +1492,7 @@ int main (){
     }
 
     int offset = 0;
-    //    offset<1920*1088*3/2
+    //    offset<CAM_WIDTH*CAM_HEIGHT16*3/2
     renderbuf = (renderbuf + 1) % 3;
 
     VCOS_UNSIGNED retrieved_events;
@@ -1528,16 +1529,16 @@ int main (){
 	
 	memcpy(render_input_buffer[renderbuf]->pBuffer+offset, camera_output_buffer->pBuffer,
 	       camera_output_buffer->nFilledLen*2/3);
-	// memcpy(render_input_buffer[renderbuf]->pBuffer+1920*1088+offset/4,
+	// memcpy(render_input_buffer[renderbuf]->pBuffer+CAM_WIDTH*CAM_HEIGHT16+offset/4,
 	//        camera_output_buffer->pBuffer + camera_output_buffer->nFilledLen*2/3,
 	//        camera_output_buffer->nFilledLen/6);
-	// memcpy(render_input_buffer[renderbuf]->pBuffer+1920*1088*5/4+offset/4,
+	// memcpy(render_input_buffer[renderbuf]->pBuffer+CAM_WIDTH*CAM_HEIGHT16*5/4+offset/4,
 	//        camera_output_buffer->pBuffer + camera_output_buffer->nFilledLen*5/6,
 	//        camera_output_buffer->nFilledLen/6);
-	memset(render_input_buffer[renderbuf]->pBuffer+1920*1088+offset/4,
+	memset(render_input_buffer[renderbuf]->pBuffer+CAM_WIDTH*CAM_HEIGHT16+offset/4,
 	       127,
 	       camera_output_buffer->nFilledLen/6);
-	memset(render_input_buffer[renderbuf]->pBuffer+1920*1088*5/4+offset/4,
+	memset(render_input_buffer[renderbuf]->pBuffer+CAM_WIDTH*CAM_HEIGHT16*5/4+offset/4,
 	       127,
 	       camera_output_buffer->nFilledLen/6);
 
@@ -1570,8 +1571,8 @@ int main (){
       }
 
     printf("min max = %g %g\n", vmin, vmax); 
-    unsigned char* buff  = render_input_buffer[renderbuf]->pBuffer+1920*1088;
-    unsigned char* buffv = render_input_buffer[renderbuf]->pBuffer+1920*1088*5/4;
+    unsigned char* buff  = render_input_buffer[renderbuf]->pBuffer+CAM_WIDTH*CAM_HEIGHT16;
+    unsigned char* buffv = render_input_buffer[renderbuf]->pBuffer+CAM_WIDTH*CAM_HEIGHT16*5/4;
     for(int y = 0; y < 24; y++){
       for(int x = 0; x < 32; x++){
 	float val = mlx90640To[32 * (23-y) + x];
@@ -1580,16 +1581,16 @@ int main (){
 	float v = val<1?-val:val<3?-1:val<5?val-4:1;
 	u = (u+1)/2*255;
 	v = (v+1)/2*255;
-	quad(buff+x*22  + y*22   *1920/2, u);
-	quad(buffv+x*22  + y*22   *1920/2, v);
-	// buff[x*22  + y*22   *1920/2] = u;
-	// buff[x*22+1+ y*22   *1920/2] = u;
-	// buff[x*22  +(y*22+1)*1920/2] = u;
-	// buff[x*22+1+(y*22+1)*1920/2] = u;
-	// buffv[x*22  + y*22   *1920/2] = v;
-	// buffv[x*22+1+ y*22   *1920/2] = v;
-	// buffv[x*22  +(y*22+1)*1920/2] = v;
-	// buffv[x*22+1+(y*22+1)*1920/2] = v;
+	quad(buff+x*IMAGE_SCALE  + y*IMAGE_SCALE   *CAM_WIDTH/2, u);
+	quad(buffv+x*IMAGE_SCALE  + y*IMAGE_SCALE   *CAM_WIDTH/2, v);
+	// buff[x*IMAGE_SCALE  + y*IMAGE_SCALE   *CAM_WIDTH/2] = u;
+	// buff[x*IMAGE_SCALE+1+ y*IMAGE_SCALE   *CAM_WIDTH/2] = u;
+	// buff[x*IMAGE_SCALE  +(y*IMAGE_SCALE+1)*CAM_WIDTH/2] = u;
+	// buff[x*IMAGE_SCALE+1+(y*IMAGE_SCALE+1)*CAM_WIDTH/2] = u;
+	// buffv[x*IMAGE_SCALE  + y*IMAGE_SCALE   *CAM_WIDTH/2] = v;
+	// buffv[x*IMAGE_SCALE+1+ y*IMAGE_SCALE   *CAM_WIDTH/2] = v;
+	// buffv[x*IMAGE_SCALE  +(y*IMAGE_SCALE+1)*CAM_WIDTH/2] = v;
+	// buffv[x*IMAGE_SCALE+1+(y*IMAGE_SCALE+1)*CAM_WIDTH/2] = v;
 	//   put_pixel_false_colour((x*IMAGE_SCALE), (y  *IMAGE_SCALE), val);
       }
     }
