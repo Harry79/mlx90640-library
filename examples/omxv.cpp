@@ -9,7 +9,9 @@
 
 #define MLX_I2C_ADDR 0x33
 
-#define IMAGE_SCALE 22
+#define IMAGE_SCALE 7
+#define IMAGE_POSX 23*640/(220*2)
+#define IMAGE_POSY 36*480/(265*2)
 
 // Valid frame rates are 1, 2, 4, 8, 16, 32 and 64
 // The i2c baudrate is set to 1mhz to support these
@@ -20,10 +22,13 @@
 // The frame is often not ready in time
 // This offset is added to the FRAME_TIME_MICROS
 // to account for this.
-#define OFFSET_MICROS 850
+//#define OFFSET_MICROS 850
+#define OFFSET_MICROS 1450
 
 static float vmin = -5;
 static float vmax = 40;
+static float vmind = -5;
+static float vmaxd = 40;
 static float vrange = vmax-vmin;
 
 /*
@@ -97,9 +102,9 @@ extern "C"
 #define VIDEO_INLINE_HEADERS OMX_FALSE
 
 //Some settings doesn't work well
-#define CAM_WIDTH 1920
-#define CAM_HEIGHT 1080
-#define CAM_HEIGHT16 1088
+#define CAM_WIDTH 640
+#define CAM_HEIGHT 480
+#define CAM_HEIGHT16 480
 #define CAM_SHARPNESS 0 //-100 .. 100
 #define CAM_CONTRAST 0 //-100 .. 100
 #define CAM_BRIGHTNESS 50 //0 .. 100
@@ -1570,19 +1575,25 @@ int main (){
 	startch = std::chrono::system_clock::now();
       }
 
-    printf("min max = %g %g\n", vmin, vmax); 
+    vmind = (7.*vmind+vmin)/8.;
+    vmaxd = (7.*vmaxd+vmax)/8.;
+  
+    vrange = vmaxd - vmind;
+
+    printf("min = %g max = %g  ", vmind, vmaxd); 
     unsigned char* buff  = render_input_buffer[renderbuf]->pBuffer+CAM_WIDTH*CAM_HEIGHT16;
     unsigned char* buffv = render_input_buffer[renderbuf]->pBuffer+CAM_WIDTH*CAM_HEIGHT16*5/4;
+
     for(int y = 0; y < 24; y++){
       for(int x = 0; x < 32; x++){
 	float val = mlx90640To[32 * (23-y) + x];
-	val = (val-vmin)*7/vrange;
+	val = (val-vmind)*7/vrange;
 	float u = val<1?1:val<3?2-val:val<5?-1:val-6;
 	float v = val<1?-val:val<3?-1:val<5?val-4:1;
 	u = (u+1)/2*255;
 	v = (v+1)/2*255;
-	quad(buff+x*IMAGE_SCALE  + y*IMAGE_SCALE   *CAM_WIDTH/2, u);
-	quad(buffv+x*IMAGE_SCALE  + y*IMAGE_SCALE   *CAM_WIDTH/2, v);
+	quad(buff+IMAGE_POSX+x*IMAGE_SCALE  + (IMAGE_POSY+y*IMAGE_SCALE)   *CAM_WIDTH/2, u);
+	quad(buffv+IMAGE_POSX+x*IMAGE_SCALE + (IMAGE_POSY+y*IMAGE_SCALE)   *CAM_WIDTH/2, v);
 	// buff[x*IMAGE_SCALE  + y*IMAGE_SCALE   *CAM_WIDTH/2] = u;
 	// buff[x*IMAGE_SCALE+1+ y*IMAGE_SCALE   *CAM_WIDTH/2] = u;
 	// buff[x*IMAGE_SCALE  +(y*IMAGE_SCALE+1)*CAM_WIDTH/2] = u;
